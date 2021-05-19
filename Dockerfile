@@ -4,6 +4,10 @@ FROM  $BASE_IMAGE
 LABEL maintainer "Nick Tyler <tylern@jlab.org>"
 USER root
 
+RUN apt-get update -qq \
+    && apt-get -y install scons \
+    && rm -rf /var/lib/apt/lists/*
+
 # Setup env for clas12root
 ARG CLAS12ROOT_VERSION=1.7.2
 ENV CLAS12ROOT /usr/local/clas12root
@@ -23,8 +27,12 @@ ENV QADB $CLAS12ROOT/clasqaDB
 # Build and install clas12root
 RUN git clone --recurse-submodules --single-branch --branch ${CLAS12ROOT_VERSION} \
     https://github.com/jeffersonlab/clas12root.git ${CLAS12ROOT} \
-    && mkdir -p ${CLAS12ROOT}/build \
-    && cd ${CLAS12ROOT}/build \
+    && mkdir -p ${CLAS12ROOT}/build
+
+RUN cd $CCDB_HOME \
+    && /usr/bin/env python2 $(which scons) -j$(nproc)
+
+RUN cd ${CLAS12ROOT}/build \
     && cmake .. \
     && make -j$(nproc) \
     && cmake .. \
